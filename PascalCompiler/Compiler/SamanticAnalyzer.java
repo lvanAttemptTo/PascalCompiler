@@ -1,11 +1,13 @@
 package PascalCompiler.Compiler;
 
+import PascalCompiler.ASTNodes.AST;
 import PascalCompiler.ASTNodes.Assign;
 import PascalCompiler.ASTNodes.BinOp;
 import PascalCompiler.ASTNodes.Block;
 import PascalCompiler.ASTNodes.Compound;
 import PascalCompiler.ASTNodes.NoOp;
 import PascalCompiler.ASTNodes.Num;
+import PascalCompiler.ASTNodes.ProcedureCall;
 import PascalCompiler.ASTNodes.ProcedureDec;
 import PascalCompiler.ASTNodes.Program;
 import PascalCompiler.ASTNodes.UnaryOp;
@@ -18,6 +20,8 @@ import PascalCompiler.Symbols.VarSymbol;
 
 public class SamanticAnalyzer extends NodeVisitor {
     public SymbolTable symTab = new SymbolTable();
+
+
 
     public Double visitBlock(Block node) {
         for (int i = 0; i < node.declarations.length; i++) {
@@ -63,6 +67,15 @@ public class SamanticAnalyzer extends NodeVisitor {
             throw new SamanticError("Variable: " + varName + " is not declared", node.token.line, node.token.col);
         }
 
+        return(null);
+    }
+
+    public Double visitProcedureCall(ProcedureCall node) {
+        if (node.params != null) {
+            for (AST param:node.params) {
+                this.visit(param);
+            }
+        }
         return(null);
     }
 

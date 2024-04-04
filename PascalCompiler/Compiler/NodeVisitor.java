@@ -9,6 +9,7 @@ import PascalCompiler.ASTNodes.Block;
 import PascalCompiler.ASTNodes.Compound;
 import PascalCompiler.ASTNodes.NoOp;
 import PascalCompiler.ASTNodes.Num;
+import PascalCompiler.ASTNodes.ProcedureCall;
 import PascalCompiler.ASTNodes.ProcedureDec;
 import PascalCompiler.ASTNodes.Program;
 import PascalCompiler.ASTNodes.Type;
@@ -44,9 +45,15 @@ public class NodeVisitor {
             return(this.visitNoOp((NoOp)node));
         } else if (node.getClass().getName().equals("PascalCompiler.ASTNodes.ProcedureDec")) {
             return(this.visitProcedureDec((ProcedureDec)node));
+        } else if (node.getClass().getName().equals("PascalCompiler.ASTNodes.ProcedureCall")) {
+            return(this.visitProcedureCall((ProcedureCall)node));
         }
-        System.out.println(node.getClass().getName());
+        // System.out.println(node.getClass().getName());
         throw new Error(node.getClass().getName());
+    }
+
+    public Double visitProcedureCall(ProcedureCall node) {
+        return(null);
     }
 
     public Double visitNum(Num node) {
@@ -61,7 +68,7 @@ public class NodeVisitor {
             return(this.visit(node.left) - this.visit(node.right));
         } else if (node.op.type == TokenType.REAL_DIV) {
             return(this.visit(node.left) / this.visit(node.right));
-        } else if (node.op.type == TokenType.INTEGER_DIV) {
+        } else if (node.op.type == TokenType.DIV) {
             return((double)Math.round(this.visit(node.left) / this.visit(node.right)));
         } else if (node.op.type == TokenType.MUL) {
             return(this.visit(node.left) * this.visit(node.right));
@@ -91,7 +98,7 @@ public class NodeVisitor {
         String varName = node.left.value;
         double value = this.visit(node.right);
         Global.vars.put(varName, value);
-        System.out.println(varName + ", " + value);
+        // System.out.println(varName + ", " + value);
         return(null);
     }
 

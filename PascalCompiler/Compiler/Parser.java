@@ -1,21 +1,10 @@
 package PascalCompiler.Compiler;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 
-import PascalCompiler.ASTNodes.AST;
-import PascalCompiler.ASTNodes.Assign;
-import PascalCompiler.ASTNodes.BinOp;
-import PascalCompiler.ASTNodes.Block;
-import PascalCompiler.ASTNodes.Compound;
-import PascalCompiler.ASTNodes.Dec;
-import PascalCompiler.ASTNodes.NoOp;
-import PascalCompiler.ASTNodes.Num;
-import PascalCompiler.ASTNodes.ProcedureDec;
-import PascalCompiler.ASTNodes.Program;
-import PascalCompiler.ASTNodes.Type;
-import PascalCompiler.ASTNodes.UnaryOp;
-import PascalCompiler.ASTNodes.Var;
-import PascalCompiler.ASTNodes.VarDec;
+import PascalCompiler.ASTNodes.*;
 import PascalCompiler.Errors.ParserError;
 import PascalCompiler.Token.Token;
 import PascalCompiler.Token.TokenType;
@@ -84,6 +73,8 @@ public class Parser {
         AST node;
         if (this.currentToken.type == TokenType.BEGIN) {
             node = this.compoundStatement();
+        } else if (this.currentToken.type == TokenType.ID && this.lexer.currentChar == '(') {
+            node = this.procCall();
         } else if (this.currentToken.type == TokenType.ID) {
             node = this.assignStatement();
         } else {
@@ -194,20 +185,78 @@ public class Parser {
         }
 
         while (this.currentToken.type == TokenType.PROCEDURE) {
-            this.eat(TokenType.PROCEDURE);
-            String name = this.currentToken.value;
-            this.eat(TokenType.ID);
-            this.eat(TokenType.SEMI);
-            Block block = this.block();
-            ProcedureDec procDec = new ProcedureDec(name, block);
+            ProcedureDec procDec = this.procedureDeclaration();
             decs.add(procDec);
-            this.eat(TokenType.SEMI);
         }
 
         Dec[] result = new Dec[decs.size()];
         for (int i = 0; i < decs.size(); i++) {
             result[i] = decs.get(i);
         }
+        return(result);
+    }
+
+    private ProcedureDec procedureDeclaration() {
+        this.eat(TokenType.PROCEDURE);
+        String procName = this.currentToken.value;
+        this.eat(TokenType.ID);
+        AST[] params = null;
+        // ArrayList<AST> params = new ArrayList<>();
+        if (this.currentToken.type == TokenType.LPAREN) {
+            this.eat(TokenType.LPAREN);
+            params = this.formalParamsList();
+            this.eat(TokenType.RPAREN);
+        }
+
+        this.eat(TokenType.SEMI);
+        Block block = this.block();
+        this.eat(TokenType.SEMI);
+        return(new ProcedureDec(procName, block, params));
+        
+    }
+
+    private ArrayList<Param> formalParams() {
+        ArrayList<Param> paramNodes = new ArrayList<>();
+
+        ArrayList<Token> paramTokens = new ArrayList<>();
+        paramTokens.add(this.currentToken);
+        this.eat(TokenType.ID);
+        while (this.currentToken.type == TokenType.COMMA) {
+            this.eat(TokenType.COMMA);
+            paramTokens.add(this.currentToken);
+            this.eat(TokenType.ID);
+        }
+
+        this.eat(TokenType.COLON);
+
+        Type typeNode = this.typeSpec();
+        for (Token t:paramTokens) {
+            paramNodes.add(new Param(new Var(t), typeNode));
+        }
+
+        return(paramNodes);
+    }
+
+    private Param[] formalParamsList() {
+        if (this.currentToken.type != TokenType.ID) {
+            return(null);
+        }
+        ArrayList<Param> paramNodes = this.formalParams();
+
+        while (this.currentToken.type == TokenType.SEMI) {
+            this.eat(TokenType.SEMI);
+            ArrayList<Param> temp = this.formalParams();
+            for (Param p:temp) {
+                paramNodes.add(p);
+            }
+            
+        }
+
+        Param[] result = new Param[paramNodes.size()];
+        for (int i = 0; i < paramNodes.size(); i++) {
+            result[i] = paramNodes.get(i);
+        }
+        
         return(result);
     }
 
@@ -233,6 +282,33 @@ public class Parser {
         }
 
         return(varDecs);
+    }
+
+    private ProcedureCall procCall() {
+        Token token = this.currentToken;
+
+        String procName = this.currentToken.value;
+        this.eat(TokenType.ID);
+        this.eat(TokenType.LPAREN);
+        ArrayList<AST> params = new ArrayList<>();
+        if (this.currentToken.type != TokenType.RPAREN) {
+            AST node = this.expr();
+            params.add(node);
+        }
+
+        while(this.currentToken.type == TokenType.COMMA) {
+            this.eat(TokenType.COMMA);
+            AST node = this.expr();
+            params.add(node);
+        }
+        this.eat(TokenType.RPAREN);
+
+        AST[] endParams = new AST[params.size()];
+        for (int i = 0; i < params.size(); i++) {
+            endParams[i] = params.get(i);
+        }
+
+        return(new ProcedureCall(procName, endParams, token));
     }
 
     private Type typeSpec() {

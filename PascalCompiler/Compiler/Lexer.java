@@ -78,11 +78,11 @@ public class Lexer {
         Token token = Keywords.map.get(result.toString().toUpperCase());
         
         if (token != null) {
-            System.out.println(token.line);
+            
             return(token);
         } else {
             token = new Token(TokenType.ID, result.toString(), this.currentLine, this.currentCol);
-            System.out.println(token.line);
+            
             return(token);
             
         }
